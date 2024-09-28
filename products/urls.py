@@ -14,8 +14,6 @@ from .productos.views import (
     ProductoCreateView,
     ProductoUpdateView,
     ProductoUpdateStateView,
-    ProductoListActiveViewIn,
-    ProductoUpdateWithIngredientsView
 )
 from .ingredientes.views import (
     IngredienteListActiveView,
@@ -24,6 +22,14 @@ from .ingredientes.views import (
     IngredienteCreateView,
     IngredienteUpdateView,
     IngredienteUpdateStateView,
+)
+
+from .menu.views import (
+    MenusListView, 
+    MenusDetailView, 
+    MenusUpdateView,
+    MenuProductoCreateView, 
+    MenuProductoDeleteView
 )
 
 urlpatterns = [
@@ -42,8 +48,6 @@ urlpatterns = [
     path('productos/add/', ProductoCreateView.as_view(), name='add_producto'),
     path('productos/update/<int:id_producto>/', ProductoUpdateView.as_view(), name='update_producto'),
     path('productos/update_state/<int:id_producto>/', ProductoUpdateStateView.as_view(), name='update_producto_state'),
-    path('productos/listaproductos/', ProductoListActiveViewIn.as_view(), name='ProductoListActiveViewIn_state'),
-    path('productos/actualizarproductos/<int:id_producto>/', ProductoUpdateWithIngredientsView.as_view(), name='ProductoUpdateWithIngredientsView_state'),
 
     # Rutas para Ingredientes
     path('ingredientes/actives/', IngredienteListActiveView.as_view(), name='active_ingredientes'),
@@ -52,4 +56,11 @@ urlpatterns = [
     path('ingredientes/add/', IngredienteCreateView.as_view(), name='add_ingrediente'),
     path('ingredientes/update/<int:id_ingrediente>/', IngredienteUpdateView.as_view(), name='update_ingrediente'),
     path('ingredientes/update_state/<int:id_ingrediente>/', IngredienteUpdateStateView.as_view(), name='update_ingrediente_state'),
+
+    # Rutas para Productos en Menús
+    path('menu/menus/', MenusListView.as_view(), name='menus-list'),
+    path('menu/menus/<int:id_menu>/', MenusDetailView.as_view(), name='menus-detail'),
+    path('menu/menus/<int:id_menu>/update/', MenusUpdateView.as_view(), name='menus-update'),
+    path('menu/menu-producto/', MenuProductoCreateView.as_view(), name='menu-producto-create'),
+    path('menu/menu-producto/<int:id_menu_producto>/', MenuProductoDeleteView.as_view(), name='menu-producto-delete')
 ]

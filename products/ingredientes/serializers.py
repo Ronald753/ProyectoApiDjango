@@ -10,3 +10,6 @@ class IngredienteSerializer(serializers.ModelSerializer):
         if Ingredientes.objects.filter(nombre_ingrediente=value).exists():
             raise serializers.ValidationError("Ya existe un ingrediente con ese nombre.")
         return value
+
+
+

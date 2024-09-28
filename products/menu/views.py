@@ -1,45 +1,74 @@
+# menu/views.py
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Menu, MenuProducto
-from .serializers import MenuSerializer, MenuProductoSerializer
+from .models import Menus, Menu_Producto
+from .serializers import MenusSerializer, MenuProductoSerializer
 
-# Obtener la lista de menús con sus productos
-class MenuListView(APIView):
+class MenusListView(APIView):
     def get(self, request):
-        menus = Menu.objects.filter(estado=True)  # Obtener solo menús activos
-        serializer = MenuSerializer(menus, many=True)
+        menus = Menus.objects.filter(estado=True)
+        serializer = MenusSerializer(menus, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-# Obtener un menú específico junto con sus productos
-class MenuDetailView(APIView):
+class MenusDetailView(APIView):
     def get(self, request, id_menu):
         try:
-            menu = Menu.objects.get(pk=id_menu)
-            serializer = MenuSerializer(menu)
-            productos = MenuProducto.objects.filter(menu=menu)  # Filtrar productos por menú
+            menu = Menus.objects.get(pk=id_menu)
+            serializer = MenusSerializer(menu)
+            # Obtener productos relacionados
+            productos = Menu_Producto.objects.filter(id_menu=menu, estado=True)
             productos_serializer = MenuProductoSerializer(productos, many=True)
-            return Response({
+            data = {
                 'menu': serializer.data,
                 'productos': productos_serializer.data
-            }, status=status.HTTP_200_OK)
-        except Menu.DoesNotExist:
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        except Menus.DoesNotExist:
             return Response({'message': 'Menú no encontrado'}, status=status.HTTP_404_NOT_FOUND)
-
-# Editar los productos de un menú específico
-class MenuUpdateProductsView(APIView):
+        
+class MenusUpdateView(APIView):
     def put(self, request, id_menu):
         try:
-            menu = Menu.objects.get(pk=id_menu)
-            productos_ids = request.data.get('productos_ids', [])
+            menu = Menus.objects.get(pk=id_menu)
+            serializer = MenusSerializer(menu, data=request.data, partial=True)
+            if serializer.is_valid():
+                menu = serializer.save()
 
-            # Actualizar productos del menú
-            menu_productos = MenuProducto.objects.filter(menu=menu)
-            menu_productos.delete() 
+                # Obtener los IDs de productos enviados en la solicitud
+                productos_ids = request.data.get('productos', [])
 
-            for producto_id in productos_ids:
-                MenuProducto.objects.create(menu=menu, producto_id=producto_id)
+                # Desactivar todos los productos actuales en el menú
+                Menu_Producto.objects.filter(id_menu=menu).update(estado=False)
 
-            return Response({'message': 'Productos del menú actualizados correctamente'}, status=status.HTTP_200_OK)
-        except Menu.DoesNotExist:
+                # Añadir o actualizar productos seleccionados
+                for producto_id in productos_ids:
+                    Menu_Producto.objects.update_or_create(
+                        id_menu=menu,
+                        id_producto_id=producto_id,
+                        defaults={'estado': True}  # Asegurarse de que estén activos
+                    )
+                
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Menus.DoesNotExist:
             return Response({'message': 'Menú no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+class MenuProductoCreateView(APIView):
+    def post(self, request):
+        serializer = MenuProductoSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class MenuProductoDeleteView(APIView):
+    def delete(self, request, id_menu_producto):
+        try:
+            menu_producto = Menu_Producto.objects.get(pk=id_menu_producto)
+            menu_producto.estado = False  # Cambiar el estado a False en lugar de eliminar
+            menu_producto.save()
+            return Response({'message': 'Producto eliminado del menú'}, status=status.HTTP_204_NO_CONTENT)
+        except Menu_Producto.DoesNotExist:
+            return Response({'message': 'Producto no encontrado'}, status=status.HTTP_404_NOT_FOUND)

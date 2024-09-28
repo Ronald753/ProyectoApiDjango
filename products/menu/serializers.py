@@ -1,12 +1,14 @@
+# menu/serializers.py
 from rest_framework import serializers
-from .models import Menu, MenuProducto
+from .models import Menus, Menu_Producto
+from products.productos.models import Productos
 
-class MenuSerializer(serializers.ModelSerializer):
+class MenusSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Menu
+        model = Menus
         fields = '__all__'
 
 class MenuProductoSerializer(serializers.ModelSerializer):
     class Meta:
-        model = MenuProducto
+        model = Menu_Producto
         fields = '__all__'

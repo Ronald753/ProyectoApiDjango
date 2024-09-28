@@ -16,15 +16,53 @@ from products.productos_ingredientes.models import ProductosIngredientes
 
 class ProductoListActiveView(APIView):
     def get(self, request):
-        productos = Productos.objects.filter(estado=True)
-        serializer = ProductoSerializer(productos, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        productos = Productos.objects.filter(estado=True).prefetch_related(
+            Prefetch(
+                'productosingredientes_set',  # Nombre de la relación inversa en el modelo ProductosIngredientes
+                queryset=ProductosIngredientes.objects.select_related('id_ingrediente'),
+                to_attr='ingredientes_relacionados'
+            )
+        )
+        
+        # Crear una lista de productos con los ingredientes correspondientes
+        productos_data = []
+        for producto in productos:
+            ingredientes = [pi.id_ingrediente.nombre_ingrediente for pi in producto.ingredientes_relacionados]
+            productos_data.append({
+                'id_producto': producto.id_producto,
+                'nombre_producto': producto.nombre_producto,
+                'descripcion': producto.descripcion,
+                'precio': producto.precio,
+                'estado': producto.estado,
+                'ingredientes': ', '.join(ingredientes)
+            })
+        
+        return Response(productos_data, status=status.HTTP_200_OK)
 
 class ProductoListDisabledView(APIView):
     def get(self, request):
-        productos = Productos.objects.filter(estado=False)
-        serializer = ProductoSerializer(productos, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        productos = Productos.objects.filter(estado=False).prefetch_related(
+            Prefetch(
+                'productosingredientes_set',  # Nombre de la relación inversa en el modelo ProductosIngredientes
+                queryset=ProductosIngredientes.objects.select_related('id_ingrediente'),
+                to_attr='ingredientes_relacionados'
+            )
+        )
+        
+        # Crear una lista de productos con los ingredientes correspondientes
+        productos_data = []
+        for producto in productos:
+            ingredientes = [pi.id_ingrediente.nombre_ingrediente for pi in producto.ingredientes_relacionados]
+            productos_data.append({
+                'id_producto': producto.id_producto,
+                'nombre_producto': producto.nombre_producto,
+                'descripcion': producto.descripcion,
+                'precio': producto.precio,
+                'estado': producto.estado,
+                'ingredientes': ', '.join(ingredientes)
+            })
+        
+        return Response(productos_data, status=status.HTTP_200_OK)
 
 class ProductoDetailView(APIView):
     def get(self, request, id_producto):
@@ -39,24 +77,7 @@ class ProductoCreateView(APIView):
     def post(self, request):
         serializer = ProductoSerializer(data=request.data)
         if serializer.is_valid():
-            # Guardar el producto
             producto = serializer.save()
-            
-            # Manejo de los ingredientes
-            ingredientes_ids = request.data.get('ingredientes', [])
-            for ingrediente_id in ingredientes_ids:
-                try:
-                    ingrediente = Ingredientes.objects.get(id_ingrediente=ingrediente_id)
-                    ProductosIngredientes.objects.create(
-                        id_producto=producto,
-                        id_ingrediente=ingrediente
-                    )
-                except Ingredientes.DoesNotExist:
-                    return Response(
-                        {"error": f"Ingrediente con ID {ingrediente_id} no encontrado."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -89,65 +110,5 @@ class ProductoUpdateStateView(APIView):
                 producto.save()
                 return Response({'message': 'Estado del producto actualizado correctamente'}, status=status.HTTP_200_OK)
             return Response({'message': 'Valor de estado no válido'}, status=status.HTTP_400_BAD_REQUEST)
-        except Productos.DoesNotExist:
-            return Response({'message': 'Producto no encontrado'}, status=status.HTTP_404_NOT_FOUND)
-
-
-class ProductoListActiveViewIn(APIView):
-    def get(self, request):
-        productos = Productos.objects.filter(estado=True).prefetch_related(
-            Prefetch(
-                'productosingredientes_set',  # Nombre de la relación inversa en el modelo ProductosIngredientes
-                queryset=ProductosIngredientes.objects.select_related('id_ingrediente'),
-                to_attr='ingredientes_relacionados'
-            )
-        )
-        
-        # Crear una lista de productos con los ingredientes correspondientes
-        productos_data = []
-        for producto in productos:
-            ingredientes = [pi.id_ingrediente.nombre_ingrediente for pi in producto.ingredientes_relacionados]
-            productos_data.append({
-                'id_producto': producto.id_producto,
-                'nombre_producto': producto.nombre_producto,
-                'descripcion': producto.descripcion,
-                'precio': producto.precio,
-                'estado': producto.estado,
-                'ingredientes': ', '.join(ingredientes)
-            })
-        
-        return Response(productos_data, status=status.HTTP_200_OK)
-    
-
-class ProductoUpdateWithIngredientsView(APIView):
-    def put(self, request, id_producto):
-        try:
-            producto = Productos.objects.get(pk=id_producto)
-            serializer = ProductoSerializer(producto, data=request.data)
-            
-            if serializer.is_valid():
-                # Guardar el producto
-                serializer.save()
-
-                # Manejo de los ingredientes
-                # Limpiar los ingredientes existentes
-                ProductosIngredientes.objects.filter(id_producto=producto).delete()
-
-                ingredientes_ids = request.data.get('ingredientes', [])
-                for ingrediente_id in ingredientes_ids:
-                    try:
-                        ingrediente = Ingredientes.objects.get(id_ingrediente=ingrediente_id)
-                        ProductosIngredientes.objects.create(
-                            id_producto=producto,
-                            id_ingrediente=ingrediente
-                        )
-                    except Ingredientes.DoesNotExist:
-                        return Response(
-                            {"error": f"Ingrediente con ID {ingrediente_id} no encontrado."},
-                            status=status.HTTP_400_BAD_REQUEST
-                        )
-
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Productos.DoesNotExist:
             return Response({'message': 'Producto no encontrado'}, status=status.HTTP_404_NOT_FOUND)

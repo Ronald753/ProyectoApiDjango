@@ -84,7 +84,7 @@ WSGI_APPLICATION = 'proyecto_api_rest.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'restaurantepotositr',
+        'NAME': 'restaurantepotositr2',
         'USER': 'postgres',
         'PASSWORD': 'admin123',
         'HOST': 'localhost',

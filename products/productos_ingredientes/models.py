@@ -13,3 +13,4 @@ class ProductosIngredientes(models.Model):
     class Meta:
         managed = False
         db_table = 'productos_ingredientes'
+        unique_together = (('id_producto', 'id_ingrediente'),)
