@@ -41,19 +41,19 @@ class IngredienteUpdateView(APIView):
         try:
             ingrediente = Ingredientes.objects.get(pk=id_ingrediente)
             serializer = IngredienteSerializer(ingrediente, data=request.data)
-            
-            # Verificar si el nuevo nombre ya existe, excluyendo el ingrediente actual
+
             if serializer.is_valid():
-                if 'nombre_ingrediente' in serializer.validated_data:
-                    nuevo_nombre = serializer.validated_data['nombre_ingrediente']
-                    if Ingredientes.objects.exclude(pk=id_ingrediente).filter(nombre_ingrediente=nuevo_nombre).exists():
-                        return Response({'message': 'Ya existe un ingrediente con este nombre.'}, status=status.HTTP_400_BAD_REQUEST)
-                
+                # Guardar los cambios si la validación es correcta
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
+            
+            # Imprimir errores de validación para depuración
+            print(serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         except Ingredientes.DoesNotExist:
             return Response({'message': 'Ingrediente no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
 
 class IngredienteUpdateStateView(APIView):
     def put(self, request, id_ingrediente):
