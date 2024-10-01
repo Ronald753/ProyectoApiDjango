@@ -7,9 +7,28 @@ from .serializers import MenusSerializer, MenuProductoSerializer
 
 class MenusListView(APIView):
     def get(self, request):
+        # Obtener todos los menús activos
         menus = Menus.objects.filter(estado=True)
-        serializer = MenusSerializer(menus, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # Crear una lista para almacenar los datos de los menús con sus productos
+        menus_data = []
+        
+        for menu in menus:
+            serializer = MenusSerializer(menu)  # Serializar el menú actual
+
+            # Obtener los productos relacionados
+            productos = Menu_Producto.objects.filter(id_menu=menu, estado=True)
+            productos_serializer = MenuProductoSerializer(productos, many=True)  # Serializar los productos
+            
+            # Combinar los datos del menú con los productos
+            menu_data = {
+                'menu': serializer.data,
+                'productos': productos_serializer.data
+            }
+            menus_data.append(menu_data)  # Agregar el menú con sus productos a la lista
+
+        return Response(menus_data, status=status.HTTP_200_OK)
+
 
 class MenusDetailView(APIView):
     def get(self, request, id_menu):

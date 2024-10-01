@@ -94,6 +94,11 @@ class ProductoDetailView(APIView):
 
 class ProductoCreateView(APIView):
     def post(self, request):
+        # Verificar que no exista otro producto con el mismo nombre
+        nombre_producto = request.data.get('nombre_producto')
+        if Productos.objects.filter(nombre_producto=nombre_producto).exists():
+            return Response({'message': 'Ya existe un producto con ese nombre'}, status=status.HTTP_400_BAD_REQUEST)
+
         # Primero validamos los datos del producto
         producto_serializer = ProductoSerializer(data=request.data)
         if producto_serializer.is_valid():
@@ -118,6 +123,12 @@ class ProductoUpdateView(APIView):
         try:
             # Obtener el producto
             producto = Productos.objects.get(pk=id_producto)
+
+            # Verificar que no exista otro producto con el mismo nombre
+            nombre_producto = request.data.get('nombre_producto')
+            if Productos.objects.filter(nombre_producto=nombre_producto).exclude(pk=id_producto).exists():
+                return Response({'message': 'Ya existe un producto con ese nombre'}, status=status.HTTP_400_BAD_REQUEST)
+
             producto_serializer = ProductoSerializer(producto, data=request.data)
 
             if producto_serializer.is_valid():

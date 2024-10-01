@@ -9,6 +9,16 @@ class MenusSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class MenuProductoSerializer(serializers.ModelSerializer):
+    nombre_producto = serializers.SerializerMethodField()
+
     class Meta:
         model = Menu_Producto
-        fields = '__all__'
+        fields = ['id_menu_producto', 'fecha_creacion', 'estado', 'id_menu', 'id_producto', 'nombre_producto']
+
+    def get_nombre_producto(self, obj):
+        # Obtener el producto relacionado
+        try:
+            producto = Productos.objects.get(id_producto=obj.id_producto.id_producto)  # Asumiendo que id_producto es la FK
+            return producto.nombre_producto
+        except Productos.DoesNotExist:
+            return None  # Retorna None si no se encuentra el producto
