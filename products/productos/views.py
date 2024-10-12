@@ -86,10 +86,12 @@ class ProductoDetailView(APIView):
                 'ingredientes': ingredientes_serializer.data  # Añadir los ingredientes a la respuesta
             }
 
+            # Asegurarse de que el precio se maneje como decimal
+            data['precio'] = float(data['precio'])  # Convertir a float si es necesario
+
             return Response(data, status=status.HTTP_200_OK)
         except Productos.DoesNotExist:
             return Response({'message': 'Producto no encontrado'}, status=status.HTTP_404_NOT_FOUND)
-
 
 
 class ProductoCreateView(APIView):
